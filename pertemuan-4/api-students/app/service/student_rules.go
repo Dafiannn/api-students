@@ -1,0 +1,115 @@
+package service
+
+import (
+	"strings"
+	"api-students/app/model"
+)
+
+// File ini berisi BUSINESS RULES MURNI (Layer 2 - Use Cases):
+// - Tidak menyentuh fiber.Ctx
+// - Tidak menyentuh database
+// - Tidak tahu apa pun tentang protokol HTTP
+// Seluruh fungsi dapat diuji dengan unit test tanpa menyalakan server atau koneksi database.
+
+// ValidateCreate memeriksa isi permintaan pembuatan data mahasiswa baru.
+// Mengembalikan peta berisi error field; jika kosong berarti lolos validasi.
+func ValidateCreate(req model.CreateStudentRequest) map[string]string {
+	errs := map[string]string{}
+	trimmedNIM := strings.TrimSpace(req.NIM)
+	trimmedName := strings.TrimSpace(req.Name)
+
+	if trimmedNIM == "" {
+		errs["nim"] = "wajib diisi"
+	} else if len(trimmedNIM) < 5 {
+		errs["nim"] = "minimal 5 karakter"
+	}
+
+	if trimmedName == "" {
+		errs["name"] = "wajib diisi"
+	}
+
+	if req.Grade < 0 || req.Grade > 100 {
+		errs["grade"] = "nilai harus berada di antara 0 dan 100"
+	}
+
+	return errs
+}
+
+// ValidateReplace memeriksa isi permintaan PUT.
+// Seluruh field wajib ada karena PUT mengganti isi entitas secara keseluruhan.
+func ValidateReplace(req model.ReplaceStudentRequest) map[string]string {
+	errs := map[string]string{}
+	trimmedNIM := strings.TrimSpace(req.NIM)
+	trimmedName := strings.TrimSpace(req.Name)
+
+	if trimmedNIM == "" {
+		errs["nim"] = "wajib diisi pada PUT"
+	} else if len(trimmedNIM) < 5 {
+		errs["nim"] = "minimal 5 karakter"
+	}
+
+	if trimmedName == "" {
+		errs["name"] = "wajib diisi pada PUT"
+	}
+
+	if req.Grade < 0 || req.Grade > 100 {
+		errs["grade"] = "nilai harus berada di antara 0 dan 100"
+	}
+
+	return errs
+}
+
+// ApplyPatch menyalin field yang dikirim ke entitas yang sudah ada.
+// Field yang bernilai nil dibiarkan apa adanya.
+func ApplyPatch(
+	current model.Student, req model.PatchStudentRequest,
+) (model.Student, map[string]string) {
+	errs := map[string]string{}
+
+	if req.NIM != nil {
+		trimmed := strings.TrimSpace(*req.NIM)
+		if trimmed == "" {
+			errs["nim"] = "tidak boleh kosong"
+		} else if len(trimmed) < 5 {
+			errs["nim"] = "minimal 5 karakter"
+		} else {
+			current.NIM = trimmed
+		}
+	}
+
+	if req.Name != nil {
+		trimmed := strings.TrimSpace(*req.Name)
+		if trimmed == "" {
+			errs["name"] = "tidak boleh kosong"
+		} else {
+			current.Name = trimmed
+		}
+	}
+
+	if req.Grade != nil {
+		if *req.Grade < 0 || *req.Grade > 100 {
+			errs["grade"] = "nilai harus berada di antara 0 dan 100"
+		} else {
+			current.Grade = *req.Grade
+		}
+	}
+
+	if req.IsActive != nil {
+		current.IsActive = *req.IsActive
+	}
+
+	return current, errs
+}
+
+// IsEmptyPatch memeriksa apakah ada minimal satu field yang dikirim pada permintaan PATCH.
+func IsEmptyPatch(req model.PatchStudentRequest) bool {
+	return req.NIM == nil && req.Name == nil && req.Grade == nil && req.IsActive == nil
+}
+
+// CountTotalPages membulatkan jumlah total halaman ke atas tanpa memakai pecahan floating point.
+func CountTotalPages(total, limit int) int {
+	if limit <= 0 {
+		return 0
+	}
+	return (total + limit - 1) / limit
+}
