@@ -1,0 +1,19 @@
+# Environment credentials
+.env
+*.env
+!.env.example
+
+# Binaries & executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Logs
+logs/
+*.log
+
+# Test & OS files
+.DS_Store
+Thumbs.db
